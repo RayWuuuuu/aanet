@@ -60,6 +60,7 @@ class DeformConv2d(nn.Module):
         offset_out_channels = deformable_groups * k * kernel_size * kernel_size
 
         # Group-wise offset leraning when deformable_groups > 1
+        # print(in_channels, deformable_groups)
         self.offset_conv = nn.Conv2d(in_channels, offset_out_channels, kernel_size=kernel_size,
                                      stride=stride, padding=dilation, dilation=dilation,
                                      groups=deformable_groups, bias=True)

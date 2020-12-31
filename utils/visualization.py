@@ -4,7 +4,7 @@ import torch
 import torch.utils.data
 import numpy as np
 import torchvision.utils as vutils
-
+import cv2
 
 def gen_error_colormap():
     cols = np.array(
@@ -51,6 +51,7 @@ def disp_error_img(D_est_tensor, D_gt_tensor, abs_thres=3., rel_thres=0.05, dila
 
 def save_images(logger, mode_tag, images_dict, global_step):
     images_dict = tensor2numpy(images_dict)
+
     for tag, values in images_dict.items():
         if not isinstance(values, list) and not isinstance(values, tuple):
             values = [values]
@@ -58,6 +59,15 @@ def save_images(logger, mode_tag, images_dict, global_step):
             if len(value.shape) == 3:
                 value = value[:, np.newaxis, :, :]
             value = value[:1]
+
+            value_0 = value[0].copy()
+            value_0 = value_0.transpose([1, 2, 0])
+            value_0 = np.abs(value_0)
+            value_0 = (value_0 - value_0.min(initial=None)) / (value_0.max(initial=None) - value_0.min(initial=None)) * 255
+            img = cv2.applyColorMap(np.array(value_0, dtype=np.uint8), cv2.COLORMAP_JET)
+            # x = cv2.cvtColor(x, cv2.COLOR_GRAY2RGB)
+            cv2.imwrite('/home/omnisky/Desktop/AANet/aanet/utils/validation_imgs/{}_{}.jpg'.format(mode_tag, tag), img)
+
             value = torch.from_numpy(value)
 
             image_name = '{}/{}'.format(mode_tag, tag)

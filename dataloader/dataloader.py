@@ -6,19 +6,17 @@ from torch.utils.data import Dataset
 import os
 
 from utils import utils
-from utils.file_io import read_img, read_disp
-
+from utils.file_io import read_disp, read_tiff
 
 class StereoDataset(Dataset):
-    def __init__(self, data_dir,
-                 dataset_name='SceneFlow',
+    def __init__(self,
+                 dataset_name='DFC',
                  mode='train',
                  save_filename=False,
                  load_pseudo_gt=False,
                  transform=None):
         super(StereoDataset, self).__init__()
 
-        self.data_dir = data_dir
         self.dataset_name = dataset_name
         self.mode = mode
         self.save_filename = save_filename
@@ -49,12 +47,21 @@ class StereoDataset(Dataset):
             'test': 'filenames/KITTI_2015_test.txt'
         }
 
+        dfc_dict = {
+            'train': 'filenames/DFC_train.txt',
+            'test': 'filenames/DFC_val.txt',
+            'val': 'filenames/DFC_val.txt'
+        }
+
+
         dataset_name_dict = {
             'SceneFlow': sceneflow_finalpass_dict,
             'KITTI2012': kitti_2012_dict,
             'KITTI2015': kitti_2015_dict,
             'KITTI_mix': kitti_mix_dict,
+            'DFC': dfc_dict
         }
+
 
         assert dataset_name in dataset_name_dict.keys()
         self.dataset_name = dataset_name
@@ -74,11 +81,11 @@ class StereoDataset(Dataset):
             sample = dict()
 
             if self.save_filename:
-                sample['left_name'] = left_img.split('/', 1)[1]
+                sample['left_name'] = left_img.split('/')[-1]
 
-            sample['left'] = os.path.join(data_dir, left_img)
-            sample['right'] = os.path.join(data_dir, right_img)
-            sample['disp'] = os.path.join(data_dir, gt_disp) if gt_disp is not None else None
+            sample['left'] = left_img
+            sample['right'] = right_img
+            sample['disp'] = gt_disp if gt_disp is not None else None
 
             if load_pseudo_gt and sample['disp'] is not None:
                 # KITTI 2015
@@ -103,8 +110,8 @@ class StereoDataset(Dataset):
         if self.save_filename:
             sample['left_name'] = sample_path['left_name']
 
-        sample['left'] = read_img(sample_path['left'])  # [H, W, 3]
-        sample['right'] = read_img(sample_path['right'])
+        sample['left'] = read_tiff(sample_path['left'])  # [H, W, 3]
+        sample['right'] = read_tiff(sample_path['right'])
 
         # GT disparity of subset if negative, finalpass and cleanpass is positive
         subset = True if 'subset' in self.dataset_name else False

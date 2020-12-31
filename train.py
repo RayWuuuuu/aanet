@@ -20,31 +20,30 @@ parser.add_argument('--mode', default='test', type=str,
                     help='Validation mode on small subset or test mode on full test data')
 
 # Training data
-parser.add_argument('--data_dir', default='data/SceneFlow', type=str, help='Training dataset')
-parser.add_argument('--dataset_name', default='SceneFlow', type=str, help='Dataset name')
+parser.add_argument('--dataset_name', default='DFC', type=str, help='Dataset name')
 
-parser.add_argument('--batch_size', default=64, type=int, help='Batch size for training')
-parser.add_argument('--val_batch_size', default=64, type=int, help='Batch size for validation')
+parser.add_argument('--batch_size', default=4, type=int, help='Batch size for training')
+parser.add_argument('--val_batch_size', default=4, type=int, help='Batch size for validation')
 parser.add_argument('--num_workers', default=8, type=int, help='Number of workers for data loading')
-parser.add_argument('--img_height', default=288, type=int, help='Image height for training')
-parser.add_argument('--img_width', default=512, type=int, help='Image width for training')
+parser.add_argument('--img_height', default=1024, type=int, help='Image height for training')
+parser.add_argument('--img_width', default=1024, type=int, help='Image width for training')
 
 # For KITTI, using 384x1248 for validation
-parser.add_argument('--val_img_height', default=576, type=int, help='Image height for validation')
-parser.add_argument('--val_img_width', default=960, type=int, help='Image width for validation')
+parser.add_argument('--val_img_height', default=1024, type=int, help='Image height for validation')
+parser.add_argument('--val_img_width', default=1024, type=int, help='Image width for validation')
 
 # Model
 parser.add_argument('--seed', default=326, type=int, help='Random seed for reproducibility')
-parser.add_argument('--checkpoint_dir', default=None, type=str, required=True,
+parser.add_argument('--checkpoint_dir', default='checkpoints/aanet+_dfc', type=str,
                     help='Directory to save model checkpoints and logs')
 parser.add_argument('--learning_rate', default=1e-3, type=float, help='Learning rate')
 parser.add_argument('--weight_decay', default=1e-4, type=float, help='Weight decay for optimizer')
-parser.add_argument('--max_disp', default=192, type=int, help='Max disparity')
+parser.add_argument('--max_disp', default=96, type=int, help='Max disparity')
 parser.add_argument('--max_epoch', default=64, type=int, help='Maximum epoch number for training')
 parser.add_argument('--resume', action='store_true', help='Resume training from latest checkpoint')
 
 # AANet
-parser.add_argument('--feature_type', default='aanet', type=str, help='Type of feature extractor')
+parser.add_argument('--feature_type', default='ganet', type=str, help='Type of feature extractor')
 parser.add_argument('--no_feature_mdconv', action='store_true', help='Whether to use mdconv for feature extraction')
 parser.add_argument('--feature_pyramid', action='store_true', help='Use pyramid feature')
 parser.add_argument('--feature_pyramid_network', action='store_true', help='Use FPN')
@@ -61,7 +60,7 @@ parser.add_argument('--no_intermediate_supervision', action='store_true',
                     help='Whether to add intermediate supervision')
 parser.add_argument('--deformable_groups', default=2, type=int, help='Number of deformable groups')
 parser.add_argument('--mdconv_dilation', default=2, type=int, help='Dilation rate for deformable conv')
-parser.add_argument('--refinement_type', default='stereodrnet', help='Type of refinement module')
+parser.add_argument('--refinement_type', default='hourglass', help='Type of refinement module')
 
 parser.add_argument('--pretrained_aanet', default=None, type=str, help='Pretrained network')
 parser.add_argument('--freeze_bn', action='store_true', help='Switch BN to eval mode to fix running statistics')
@@ -82,6 +81,7 @@ parser.add_argument('--no_build_summary', action='store_true', help='Dont save s
 parser.add_argument('--save_ckpt_freq', default=10, type=int, help='Save checkpoint frequency (epochs)')
 
 parser.add_argument('--evaluate_only', action='store_true', help='Evaluate pretrained models')
+# parser.add_argument('--evaluate_only', action='store_true', help='Evaluate pretrained models')
 parser.add_argument('--no_validate', action='store_true', help='No validation')
 parser.add_argument('--strict', action='store_true', help='Strict mode when loading checkpoints')
 parser.add_argument('--val_metric', default='epe', help='Validation metric to select best model')
@@ -94,6 +94,8 @@ utils.save_args(args)
 
 filename = 'command_test.txt' if args.mode == 'test' else 'command_train.txt'
 utils.save_command(args.checkpoint_dir, filename)
+
+os.environ['CUDA_VISIBLE_DEVICES'] = '0, 1, 2, 3'
 
 
 def main():
@@ -115,7 +117,7 @@ def main():
                             ]
     train_transform = transforms.Compose(train_transform_list)
 
-    train_data = dataloader.StereoDataset(data_dir=args.data_dir,
+    train_data = dataloader.StereoDataset(
                                           dataset_name=args.dataset_name,
                                           mode='train' if args.mode != 'train_all' else 'train_all',
                                           load_pseudo_gt=args.load_pseudo_gt,
@@ -132,7 +134,7 @@ def main():
                           transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD)
                          ]
     val_transform = transforms.Compose(val_transform_list)
-    val_data = dataloader.StereoDataset(data_dir=args.data_dir,
+    val_data = dataloader.StereoDataset(
                                         dataset_name=args.dataset_name,
                                         mode=args.mode,
                                         transform=val_transform)

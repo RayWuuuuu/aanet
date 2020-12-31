@@ -51,6 +51,7 @@ def disp_warp(img, disp, padding_mode='border'):
     assert disp.min() >= 0
 
     grid = meshgrid(img)  # [B, 2, H, W] in image scale
+    grid = grid.type(torch.FloatTensor).cuda()
     # Note that -disp here
     offset = torch.cat((-disp, torch.zeros_like(disp)), dim=1)  # [B, 2, H, W]
     sample_grid = grid + offset

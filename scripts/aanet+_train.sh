@@ -3,13 +3,13 @@
 # Train on Scene Flow training set
 CUDA_VISIBLE_DEVICES=0,1,2,3 python train.py \
 --mode val \
---checkpoint_dir checkpoints/aanet+_sceneflow \
---batch_size 64 \
+--checkpoint_dir log/aanet+_dfc \
+--batch_size 4 \
 --val_batch_size 64 \
---img_height 288 \
---img_width 576 \
---val_img_height 576 \
---val_img_width 960 \
+--img_height 1024 \
+--img_width 1024 \
+--val_img_height 1024 \
+--val_img_width 1024 \
 --feature_type ganet \
 --feature_pyramid \
 --refinement_type hourglass \

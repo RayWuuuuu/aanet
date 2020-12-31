@@ -6,6 +6,13 @@ import numpy as np
 import re
 from PIL import Image
 import sys
+import tifffile
+
+import cv2
+
+def read_tiff(filename):
+    img = np.array(tifffile.imread(filename)).astype(np.float)
+    return img
 
 
 def read_img(filename):
@@ -26,6 +33,9 @@ def read_disp(filename, subset=False):
         disp = _read_kitti_disp(filename)
     elif filename.endswith('npy'):
         disp = np.load(filename)
+    elif filename.endswith('tif'):
+        disp = _read_dfc_disp(filename)
+        disp = np.abs(disp)
     else:
         raise Exception('Invalid disparity file format!')
     return disp  # [H, W]
@@ -105,3 +115,21 @@ def _read_kitti_disp(filename):
     depth = np.array(Image.open(filename))
     depth = depth.astype(np.float32) / 256.
     return depth
+
+def _read_dfc_disp(filename):
+    depth = np.array(tifffile.imread(filename))
+    depth = depth.astype(np.float32)
+    return depth
+
+if __name__ == '__main__':
+    x = tifffile.imread('/media/omnisky/24ef2133-7131-4681-865f-7f5e2a0dc3fa/DataFusionContest/Track2-RGB-1/JAX_004_009_007_LEFT_RGB.tif')
+    x = np.array(x).astype(np.float32)
+    print(x.shape)
+    # x = np.array(x)
+    # x[x == -999.0] = 0.0
+    # x = np.abs(x)
+    # x = (x - x.min(initial=None)) / (x.max(initial=None) - x.min(initial=None)) * 255
+    # x = cv2.applyColorMap(np.array(x, dtype=np.uint8), cv2.COLORMAP_JET)
+    # # x = cv2.cvtColor(x, cv2.COLOR_GRAY2RGB)
+    # cv2.imwrite('./test.jpg', x)
+

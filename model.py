@@ -8,6 +8,7 @@ from utils import utils
 from utils.visualization import disp_error_img, save_images
 from metric import d1_metric, thres_metric
 
+NO_DATA = -999.0
 
 class Model(object):
     def __init__(self, args, logger, optimizer, aanet, device, start_iter=0, start_epoch=0,
@@ -56,7 +57,7 @@ class Model(object):
             right = sample['right'].to(device)
             gt_disp = sample['disp'].to(device)  # [B, H, W]
 
-            mask = (gt_disp > 0) & (gt_disp < args.max_disp)
+            mask = (gt_disp > 0) & (gt_disp < args.max_disp) & (gt_disp != NO_DATA)
 
             if args.load_pseudo_gt:
                 pseudo_gt_disp = sample['pseudo_disp'].to(device)
@@ -231,12 +232,16 @@ class Model(object):
         valid_samples = 0
 
         for i, sample in enumerate(val_loader):
-            if i % 100 == 0:
+            if i % 5 == 0:
                 logger.info('=> Validating %d/%d' % (i, num_samples))
 
-            left = sample['left'].to(self.device)  # [B, 3, H, W]
-            right = sample['right'].to(self.device)
-            gt_disp = sample['disp'].to(self.device)  # [B, H, W]
+            left = sample['left'].type(torch.FloatTensor)
+            right = sample['right'].type(torch.FloatTensor)
+            gt_disp = sample['disp'].type(torch.FloatTensor)
+
+            left = left.to(self.device)  # [B, 3, H, W]
+            right = right.to(self.device)
+            gt_disp = gt_disp.to(self.device)  # [B, H, W]
             mask = (gt_disp > 0) & (gt_disp < args.max_disp)
 
             if not mask.any():
@@ -269,15 +274,16 @@ class Model(object):
 
             # Save 3 images for visualization
             if not args.evaluate_only:
-                if i in [num_samples // 4, num_samples // 2, num_samples // 4 * 3]:
-                    img_summary = dict()
-                    img_summary['disp_error'] = disp_error_img(pred_disp, gt_disp)
-                    img_summary['left'] = left
-                    img_summary['right'] = right
-                    img_summary['gt_disp'] = gt_disp
-                    img_summary['pred_disp'] = pred_disp
-                    save_images(self.train_writer, 'val' + str(val_count), img_summary, self.epoch)
-                    val_count += 1
+                img_summary = dict()
+                img_summary['disp_error'] = disp_error_img(pred_disp, gt_disp)
+                img_summary['left'] = left
+                img_summary['right'] = right
+                img_summary['gt_disp'] = gt_disp
+                img_summary['pred_disp'] = pred_disp
+                save_images(self.train_writer, 'val' + str(val_count), img_summary, self.epoch)
+                val_count += 1
+                # if i in [num_samples // 4, num_samples // 2, num_samples // 4 * 3]:
+
 
         logger.info('=> Validation done!')
 
